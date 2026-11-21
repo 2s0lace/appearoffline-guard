@@ -23,23 +23,20 @@ body {
 
 .blocked-ghost {
   width: 84px;
-  aspect-ratio: 1090 / 1114;
+  aspect-ratio: 972 / 1114;
   height: auto;
   margin-bottom: -8px;
   overflow: visible;
 }
 
-/* Wake-up sequence: sleep → waking (eyes half open, arm up) → awake (eyes open, smile, waving) */
-.blocked-ghost .ghost-eyes,
-.blocked-ghost .ghost-arm {
+/* Wake-up sequence: sleep → waking (eyes half open) → awake (eyes open, smile) */
+.blocked-ghost .ghost-eyes {
   display: none;
 }
 
 .blocked-ghost[data-state="sleep"] .ghost-eyes-sleep,
 .blocked-ghost[data-state="waking"] .ghost-eyes-half,
-.blocked-ghost[data-state="awake"] .ghost-eyes-open,
-.blocked-ghost[data-state="waking"] .ghost-arm,
-.blocked-ghost[data-state="awake"] .ghost-arm {
+.blocked-ghost[data-state="awake"] .ghost-eyes-open {
   display: inline;
 }
 
