@@ -19,6 +19,7 @@ import {
   resolveActiveHashes,
   verifyUnlockCode,
 } from "./helpers/unlock-codes";
+import { sealCodesForAi } from "./helpers/code-seal";
 import {
   computeCategoryStats,
   filterUnlockHistoryByPeriod,
@@ -322,13 +323,19 @@ const UI = (() => {
     if (isSettingsLocked()) {
       return;
     }
-    const { codes, hashes } = await generateCodeBatch(50);
-    await storage.set({
-      customCodeHashes: hashes,
-      usedCodeHashes: [],
-    });
-    elements.generatedCodesOutput.value = codes.join("\n");
-    elements.generatedCodesBox.hidden = false;
+    elements.generateCodesBtn.disabled = true;
+    try {
+      const { codes, hashes } = await generateCodeBatch(50);
+      const sealedBlob = await sealCodesForAi(codes);
+      await storage.set({
+        customCodeHashes: hashes,
+        usedCodeHashes: [],
+      });
+      elements.generatedCodesOutput.value = sealedBlob;
+      elements.generatedCodesBox.hidden = false;
+    } finally {
+      applyLockState();
+    }
   });
 
   elements.copyCodesBtn.addEventListener("click", async () => {
