@@ -1,4 +1,4 @@
-# Unruminate
+# appearoffline: guard
 
 A calm, mindful browser extension (Chrome & Firefox, Manifest V3) built to interrupt impulsive browsing and rumination loops. Based on [penge/block-site](https://github.com/penge/block-site) (MIT).
 

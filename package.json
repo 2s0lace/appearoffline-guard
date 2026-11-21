@@ -1,5 +1,5 @@
 {
-  "name": "unruminate",
+  "name": "appearoffline-guard",
   "version": "8.2.1",
   "description": "Mindful website blocker that breaks rumination loops with a 30s pause, logged reason, history stats, and optional one-time AI/partner codes.",
   "author": "2s0lace (based on block-site by Pavel Bucka)",

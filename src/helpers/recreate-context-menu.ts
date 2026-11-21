@@ -5,7 +5,7 @@ import removeProtocol from "./remove-protocol";
 const createContextMenu = () => {
   const parentId = chrome.contextMenus.create({
     id: "block_site",
-    title: "Block Site",
+    title: chrome.runtime.getManifest().name,
     documentUrlPatterns: ["https://*/*", "http://*/*"],
   });
 
