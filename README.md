@@ -1,69 +1,43 @@
-# Block Site
+# Unruminate
 
-**Block Site** is a simple **Chrome/Firefox extension** that improves your productivity by blocking access to distracting websites as you specify.
+A calm, mindful browser extension (Chrome & Firefox, Manifest V3) built to interrupt impulsive browsing and rumination loops. Based on [penge/block-site](https://github.com/penge/block-site) (MIT).
 
-## Icon
+## Features
 
-<img src="public/icon_128.png" width="48">
+- **30-second mindful pause** — centered, smooth 60fps breathing ring with calm 3-second blurred number transitions. Pauses automatically if you switch tabs.
+- **Conscious reason logging** — before unlocking a blocked site, choose what is driving the urge (**Need**, **Boredom**, **Rumination**, or **Other**) and write down why you are visiting.
+- **History & pattern stats** — see how many times you unlocked sites out of boredom vs. rumination vs. genuine need (Today / This Week / This Month / All Time), with individual entry deletion and full history reset.
+- **Two unlock modes**:
+  1. **Standard** — 30s pause + reason logging (ready out of the box for everyday use).
+  2. **With one-time AI / partner code** — requires a single-use code (`XXXX-XXXX`) to temporarily unlock a site or modify settings. Includes a built-in **Generate 50 codes** button in Options that saves **only SHA-256 hashes** inside the extension so you can hand the plaintext codes to your AI assistant or accountability partner.
+- **Auto re-block** — temporary unlocks (5 / 10 / 15 / 30 min) automatically re-check and re-block open tabs when time expires.
+- **5 languages & Light/Dark themes** — Polish, English, Spanish, French, and German, with Light (default) and Dark themes.
 
-<img src="public/toolbar/light.png" width="480">
-<img src="public/toolbar/dark.png" width="480">
+## Build & Install (Chrome / Edge / Brave)
 
-## Usage
-
-Click on the icon. Enter sites to block. See [Special characters](#special-characters) and [Examples](#examples).
-
-Choose how to resolve blocked: **Close Tab**, or **Show Blocked info page**.
-
-**Blocked info page** shows what _url_ was blocked, based on which _rule_ it was blocked, and optionally a blocked count over a chosen period of time:
-_All Time_, _This Month_, _This Week_, or _Today_.
-
-### Special characters
-
-```
-! ⇒ prepend to exclude from blocking
-* ⇒ match any zero or more characters
-? ⇒ match any one character
+```bash
+npm install
+npm run lint
+npm test
 ```
 
-### Examples
+Build for Chrome (PowerShell):
 
-```
-example.com              # Blocks example.com/ and any page on it
-
-
-example.com/             # Blocks example.com/ ONLY
-example.com/*            # Blocks example.com/ and any page on it
-
-
-example.com/*            # Blocks any page on example.com/
-!example.com/orange/     # except example.com/orange/
-
-
-*.example.com/           # Blocks any subdomain of example.com/
-!apple.example.com/      # except apple.example.com/
-
-
-*watch*                  # Blocks any page containing word "watch"
-
-
-example.com/????/*       # Blocks e.g.:
-                         # - example.com/pear/projects/1
-                         # - example.com/plum/projects/1
-
-
-example.com/*rry/*       # Blocks e.g.:
-                         # - example.com/cherry/projects/1
-                         # - example.com/strawberry/projects/1
+```powershell
+$env:TARGET="chrome"; npx tsup
 ```
 
-### Context menu
+Build for Firefox (PowerShell):
 
-If enabled, Block Site will be added to your browser's context menu. It will offer options to:
-- Block this page only
-- Block entire website
+```powershell
+$env:TARGET="firefox"; npx tsup
+```
 
-## Privacy notice
+Load in Chrome / Edge / Brave:
+1. Open `chrome://extensions`
+2. Enable **Developer mode**
+3. Click **Load unpacked** and select `dist/chrome`
 
-Block Site doesn't collect any personal information or data.
-Any user settings are stored in your browser only.
+## License
+
+MIT — built on top of [penge/block-site](https://github.com/penge/block-site) by Pavel Bucka.

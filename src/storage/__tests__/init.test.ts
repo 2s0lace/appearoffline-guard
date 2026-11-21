@@ -15,6 +15,14 @@ test("getRevisitedSchema() returns defaults for any invalid attribute", () => {
     counterShow: DEFAULTS.counterShow,
     counterPeriod: DEFAULTS.counterPeriod,
     resolution: DEFAULTS.resolution,
+    unlockMode: DEFAULTS.unlockMode,
+    language: DEFAULTS.language,
+    theme: DEFAULTS.theme,
+    temporaryUnlocks: DEFAULTS.temporaryUnlocks,
+    usedCodeHashes: DEFAULTS.usedCodeHashes,
+    customCodeHashes: DEFAULTS.customCodeHashes,
+    unlockHistory: DEFAULTS.unlockHistory,
+    settingsUnlockedUntil: DEFAULTS.settingsUnlockedUntil,
   } as Partial<Schema>);
 
   expect(getRevisitedSchema({

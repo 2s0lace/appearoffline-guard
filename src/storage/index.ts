@@ -16,6 +16,14 @@ const getAll = () => get([
   "counterShow",
   "counterPeriod",
   "resolution",
+  "unlockMode",
+  "language",
+  "theme",
+  "temporaryUnlocks",
+  "usedCodeHashes",
+  "customCodeHashes",
+  "unlockHistory",
+  "settingsUnlockedUntil",
 ]);
 
 export default {

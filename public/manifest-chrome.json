@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "Block Site",
-  "description": "Blocks access to distracting websites to improve your productivity.",
+  "name": "Unruminate",
+  "description": "Mindful website blocker that breaks rumination loops with a 30s pause, logged reason, and optional one-time AI/partner unlock codes.",
   "version": "8.2.1",
   "icons": {
     "32": "icon_32.png",
@@ -18,7 +18,8 @@
     "storage",
     "tabs",
     "webNavigation",
-    "contextMenus"
+    "contextMenus",
+    "alarms"
   ],
   "background": {
     "service_worker": "background.mjs",

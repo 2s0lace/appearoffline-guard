@@ -1,10 +1,10 @@
 {
-  "name": "block-site",
+  "name": "unruminate",
   "version": "8.2.1",
-  "description": "Blocks access to distracting websites to improve your productivity.",
-  "author": "Pavel Bucka",
+  "description": "Mindful website blocker that breaks rumination loops with a 30s pause, logged reason, history stats, and optional one-time AI/partner codes.",
+  "author": "2s0lace (based on block-site by Pavel Bucka)",
   "license": "MIT",
-  "repository": "github:penge/block-site",
+  "repository": "github:2s0lace/unruminate",
   "private": true,
   "scripts": {
     "lint": "eslint src --ext .ts",

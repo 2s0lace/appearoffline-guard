@@ -2,15 +2,17 @@ import storage from "../storage";
 import findRule from "./find-rule";
 import * as counterHelper from "./counter";
 import getBlockedUrl from "./get-blocked-url";
+import { isRuleTemporarilyUnlocked } from "./temporary-unlock";
 
 interface BlockSiteOptions {
   blocked: string[]
+  temporaryUnlocks?: Record<string, number>
   tabId: number
   url: string
 }
 
 export default (options: BlockSiteOptions) => {
-  const { blocked, tabId, url } = options;
+  const { blocked, temporaryUnlocks = {}, tabId, url } = options;
   if (!blocked.length || !tabId || !url.startsWith("http")) {
     return;
   }
@@ -21,6 +23,10 @@ export default (options: BlockSiteOptions) => {
       counterHelper.flushObsoleteEntries({ blocked, counter });
       storage.set({ counter });
     });
+    return;
+  }
+
+  if (isRuleTemporarilyUnlocked(foundRule.path, temporaryUnlocks)) {
     return;
   }
 

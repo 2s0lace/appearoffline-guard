@@ -10,8 +10,48 @@ export const COUNTER_PERIODS = [
   "TODAY",
 ] as const;
 
+export const UNLOCK_CATEGORIES = [
+  "NEED",
+  "BOREDOM",
+  "RUMINATION",
+  "OTHER",
+] as const;
+
+export const UNLOCK_MODES = [
+  "PAUSE_AND_REASON",
+  "PAUSE_REASON_AND_CODE",
+] as const;
+
+export const LANGUAGES = [
+  "pl",
+  "en",
+  "es",
+  "fr",
+  "de",
+] as const;
+
+export const THEMES = [
+  "LIGHT",
+  "DARK",
+] as const;
+
 export type Resolution = typeof RESOLUTIONS[number];
 export type CounterPeriod = typeof COUNTER_PERIODS[number];
+export type UnlockCategory = typeof UNLOCK_CATEGORIES[number];
+export type UnlockMode = typeof UNLOCK_MODES[number];
+export type Language = typeof LANGUAGES[number];
+export type Theme = typeof THEMES[number];
+
+export interface UnlockLogEntry {
+  id: string
+  timestamp: number
+  url: string
+  rule: string
+  category: UnlockCategory
+  reason: string
+  durationMinutes: number
+  kind?: "SITE_UNLOCK" | "SETTINGS_UNLOCK"
+}
 
 export interface Schema {
   enabled: boolean
@@ -21,6 +61,14 @@ export interface Schema {
   counterShow: boolean
   counterPeriod: CounterPeriod
   resolution: Resolution
+  unlockMode: UnlockMode
+  language: Language
+  theme: Theme
+  temporaryUnlocks: Record<string, number>
+  usedCodeHashes: string[]
+  customCodeHashes: string[]
+  unlockHistory: UnlockLogEntry[]
+  settingsUnlockedUntil: number
 }
 
 export const DEFAULTS: Readonly<Schema> = {
@@ -28,19 +76,35 @@ export const DEFAULTS: Readonly<Schema> = {
   contextMenu: false,
   blocked: [],
   counter: {},
-  counterShow: false,
+  counterShow: true,
   counterPeriod: "ALL_TIME",
-  resolution: "CLOSE_TAB",
+  resolution: "SHOW_BLOCKED_INFO_PAGE",
+  unlockMode: "PAUSE_AND_REASON",
+  language: "pl",
+  theme: "LIGHT",
+  temporaryUnlocks: {},
+  usedCodeHashes: [],
+  customCodeHashes: [],
+  unlockHistory: [],
+  settingsUnlockedUntil: 0,
 };
 
 export const VALIDATORS: Readonly<Record<keyof Schema, (value: unknown) => boolean>> = {
   enabled: (value) => typeof value === "boolean",
   contextMenu: (value) => typeof value === "boolean",
   blocked: (value) => Array.isArray(value),
-  counter: (value) => typeof value === "object",
+  counter: (value) => typeof value === "object" && value !== null && !Array.isArray(value),
   counterShow: (value) => typeof value === "boolean",
   counterPeriod: (value) => COUNTER_PERIODS.includes(value as CounterPeriod),
   resolution: (value) => RESOLUTIONS.includes(value as Resolution),
+  unlockMode: (value) => UNLOCK_MODES.includes(value as UnlockMode),
+  language: (value) => LANGUAGES.includes(value as Language),
+  theme: (value) => THEMES.includes(value as Theme),
+  temporaryUnlocks: (value) => typeof value === "object" && value !== null && !Array.isArray(value),
+  usedCodeHashes: (value) => Array.isArray(value),
+  customCodeHashes: (value) => Array.isArray(value),
+  unlockHistory: (value) => Array.isArray(value),
+  settingsUnlockedUntil: (value) => typeof value === "number" && !Number.isNaN(value),
 };
 
 export const BLOCKED_EXAMPLE: string[] = [

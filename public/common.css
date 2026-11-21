@@ -49,13 +49,11 @@ a:hover {
   text-decoration: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background-color: #121212;
-    --text-color: #bcbcbc;
-  }
+html[data-theme="dark"] {
+  --background-color: #141715;
+  --text-color: #e4e7e4;
+}
 
-  h1 > img {
-    filter: saturate(50%);
-  }
+html[data-theme="dark"] h1 > img {
+  filter: saturate(50%);
 }
