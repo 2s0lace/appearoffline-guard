@@ -5,12 +5,10 @@ import storage, {
   RESOLUTIONS,
   BLOCKED_EXAMPLE,
   UnlockLogEntry,
-  UnlockCategory,
   UnlockMode,
   Language,
   Theme,
   COUNTER_PERIODS,
-  UNLOCK_CATEGORIES,
 } from "./storage";
 import {
   generateCodeBatch,
@@ -20,11 +18,9 @@ import {
   verifyUnlockCode,
 } from "./helpers/unlock-codes";
 import { sealCodesForAi } from "./helpers/code-seal";
-import {
-  computeCategoryStats,
-  filterUnlockHistoryByPeriod,
-} from "./helpers/unlock-history";
 import { getTranslations, Translations } from "./helpers/i18n";
+import { formatRemaining, getEmergencyUnlockState } from "./helpers/emergency-unlock";
+import { setupBackButton } from "./helpers/back-button";
 
 const SETTINGS_UNLOCK_MINUTES = 5;
 const MIN_SETTINGS_REASON_LENGTH = 10;
@@ -58,18 +54,20 @@ const UI = (() => {
     settingsUnlockReason: document.getElementById("settings-unlock-reason") as HTMLInputElement,
     settingsUnlockCode: document.getElementById("settings-unlock-code") as HTMLInputElement,
     settingsUnlockError: document.getElementById("settings-unlock-error") as HTMLDivElement,
-    historyPeriod: document.getElementById("history-period") as HTMLSelectElement,
-    resetCountersBtn: document.getElementById("reset-counters-btn") as HTMLButtonElement,
-    clearHistoryBtn: document.getElementById("clear-history-btn") as HTMLButtonElement,
-    historyEmpty: document.getElementById("history-empty") as HTMLDivElement,
-    historyList: document.getElementById("history-list") as HTMLDivElement,
+    backBtn: document.getElementById("back-btn") as HTMLButtonElement,
+    showLastBatchBtn: document.getElementById("show-last-batch-btn") as HTMLButtonElement,
+    emergencyDesc: document.getElementById("emergency-desc") as HTMLSpanElement,
+    emergencyRequestBtn: document.getElementById("emergency-request-btn") as HTMLButtonElement,
+    emergencyCancelBtn: document.getElementById("emergency-cancel-btn") as HTMLButtonElement,
+    emergencyConfirmBtn: document.getElementById("emergency-confirm-btn") as HTMLButtonElement,
   };
 
   elements.blockedList.placeholder = BLOCKED_EXAMPLE.join("\n");
 
   const currentState: Pick<
     Schema,
-    "enabled" | "unlockMode" | "language" | "theme" | "blocked" | "usedCodeHashes" | "customCodeHashes" | "unlockHistory" | "settingsUnlockedUntil"
+    "enabled" | "unlockMode" | "language" | "theme" | "blocked" | "usedCodeHashes" | "customCodeHashes" | "settingsUnlockedUntil"
+    | "emergencyUnlockRequestedAt" | "lastSealedBatch"
   > = {
     enabled: false,
     unlockMode: "PAUSE_AND_REASON",
@@ -78,8 +76,9 @@ const UI = (() => {
     blocked: [],
     usedCodeHashes: [],
     customCodeHashes: [],
-    unlockHistory: [],
     settingsUnlockedUntil: 0,
+    emergencyUnlockRequestedAt: 0,
+    lastSealedBatch: "",
   };
 
   let t: Translations = getTranslations("pl");
@@ -103,6 +102,32 @@ const UI = (() => {
     const remaining = getRemainingCodesCount(currentState.usedCodeHashes, activeHashes);
     const total = getTotalCodesCount(activeHashes);
     elements.codesRemaining.textContent = t.codesRemaining(remaining, total);
+    const countValue = document.getElementById("codes-count-value");
+    const meterFill = document.getElementById("codes-meter-fill");
+    if (countValue) {
+      countValue.textContent = String(remaining);
+    }
+    if (meterFill) {
+      const ratio = total > 0 ? remaining / total : 0;
+      meterFill.style.width = `${Math.round(ratio * 100)}%`;
+      meterFill.classList.toggle("low", ratio <= 0.2);
+    }
+  };
+
+  const renderEmergencyState = () => {
+    const state = getEmergencyUnlockState(currentState.emergencyUnlockRequestedAt, Date.now());
+    elements.emergencyRequestBtn.hidden = state.status !== "IDLE";
+    elements.emergencyCancelBtn.hidden = state.status === "IDLE";
+    elements.emergencyConfirmBtn.hidden = state.status !== "READY";
+    elements.emergencyDesc.classList.toggle("waiting", state.status === "WAITING");
+    if (state.status === "WAITING") {
+      const { hours, minutes } = formatRemaining(state.remainingMs);
+      elements.emergencyDesc.textContent = t.emergencyWaiting(hours, minutes);
+    } else if (state.status === "READY") {
+      elements.emergencyDesc.textContent = t.emergencyReady;
+    } else {
+      elements.emergencyDesc.textContent = t.emergencyDesc;
+    }
   };
 
   const applyLockState = () => {
@@ -131,96 +156,9 @@ const UI = (() => {
     elements.generateCodesBtn.disabled = locked;
     elements.blockedList.disabled = locked;
     elements.resolution.disabled = locked;
-    elements.clearHistoryBtn.disabled = locked;
-    elements.resetCountersBtn.disabled = locked;
+    elements.showLastBatchBtn.hidden = !currentState.lastSealedBatch;
 
-    document.querySelectorAll<HTMLButtonElement>(".history-delete-btn").forEach((btn) => {
-      btn.disabled = locked;
-    });
-  };
-
-  const renderHistory = () => {
-    const period = elements.historyPeriod.value as CounterPeriod;
-    const filtered = filterUnlockHistoryByPeriod(currentState.unlockHistory, period);
-    const stats = computeCategoryStats(filtered, true);
-
-    (["BOREDOM", "RUMINATION", "NEED", "OTHER"] as UnlockCategory[]).forEach((cat) => {
-      const valEl = document.getElementById(`stat-${cat}`);
-      const pctEl = document.getElementById(`stat-pct-${cat}`);
-      const count = stats.counts[cat];
-      const pct = stats.total > 0 ? Math.round((count / stats.total) * 100) : 0;
-      if (valEl) {
-        valEl.textContent = String(count);
-      }
-      if (pctEl) {
-        pctEl.textContent = `${pct}%`;
-      }
-    });
-
-    elements.historyList.innerHTML = "";
-    elements.historyEmpty.hidden = filtered.length > 0;
-    const locked = isSettingsLocked();
-
-    filtered.forEach((entry: UnlockLogEntry) => {
-      const item = document.createElement("div");
-      item.className = "history-item";
-
-      const top = document.createElement("div");
-      top.className = "history-item-top";
-
-      const meta = document.createElement("div");
-      meta.className = "history-meta";
-
-      const badge = document.createElement("span");
-      badge.className = `cat-badge cat-${entry.category}`;
-      badge.textContent = entry.kind === "SETTINGS_UNLOCK"
-        ? t.settingsChangeBadge
-        : t.categoriesFull[entry.category];
-
-      const ruleEl = document.createElement("span");
-      ruleEl.className = "history-rule";
-      ruleEl.textContent = entry.kind === "SETTINGS_UNLOCK"
-        ? t.settingsPanelLabel
-        : `${entry.rule} (${entry.durationMinutes} min)`;
-
-      meta.appendChild(badge);
-      meta.appendChild(ruleEl);
-
-      const right = document.createElement("div");
-      right.className = "history-item-right";
-
-      const timeEl = document.createElement("span");
-      timeEl.className = "history-time";
-      timeEl.textContent = new Date(entry.timestamp).toLocaleString(t.locale);
-
-      const delBtn = document.createElement("button");
-      delBtn.type = "button";
-      delBtn.className = "history-delete-btn";
-      delBtn.textContent = "×";
-      delBtn.title = t.deleteEntryTooltip;
-      delBtn.disabled = locked;
-      delBtn.addEventListener("click", () => {
-        if (isSettingsLocked()) {
-          return;
-        }
-        const nextHistory = currentState.unlockHistory.filter((itemEntry) => itemEntry.id !== entry.id);
-        storage.set({ unlockHistory: nextHistory });
-      });
-
-      right.appendChild(timeEl);
-      right.appendChild(delBtn);
-
-      top.appendChild(meta);
-      top.appendChild(right);
-
-      const reasonEl = document.createElement("p");
-      reasonEl.className = "history-reason";
-      reasonEl.textContent = entry.reason;
-
-      item.appendChild(top);
-      item.appendChild(reasonEl);
-      elements.historyList.appendChild(item);
-    });
+    renderEmergencyState();
   };
 
   const applyLanguage = (lang: Language) => {
@@ -247,11 +185,17 @@ const UI = (() => {
     setText("opt-theme-light", t.themeLight);
     setText("opt-theme-dark", t.themeDark);
     setText("label-codes-pool", t.codesPoolLabel);
+    setText("codes-pool-desc", t.codesPoolDesc);
     setText("generate-codes-btn", t.generateCodesBtn);
     setText("generated-title", t.generatedTitle);
     setText("generated-desc", t.generatedDesc);
     setText("copy-codes-btn", t.copyCodesBtn);
     setText("hide-codes-btn", t.hideCodesBtn);
+    setText("show-last-batch-btn", t.showLastBatchBtn);
+    setText("emergency-title", t.emergencyTitle);
+    setText("emergency-request-btn", t.emergencyRequestBtn);
+    setText("emergency-cancel-btn", t.emergencyCancelBtn);
+    setText("emergency-confirm-btn", t.emergencyConfirmBtn);
     setText("label-context-menu", t.contextMenuLabel);
     setText("quick-add-btn", t.addSiteBtn);
     setText("blocked-sites-heading", t.blockedSitesHeading);
@@ -260,10 +204,8 @@ const UI = (() => {
     setText("opt-res-close", t.resCloseTab);
     setText("label-counter-show", t.showCounterLabel);
     setText("label-counter-period", t.counterPeriodLabel);
-    setText("history-heading", t.historyHeading);
-    setText("reset-counters-btn", t.resetCountersBtn);
-    setText("clear-history-btn", t.clearHistoryBtn);
-    setText("history-empty", t.historyEmpty);
+    setText("history-nav-link", t.historyNavLink);
+    elements.backBtn.textContent = `← ${t.backBtn}`;
 
     elements.settingsUnlockReason.placeholder = t.settingsReasonPlaceholder;
     elements.settingsUnlockCode.placeholder = t.codePlaceholder;
@@ -280,15 +222,9 @@ const UI = (() => {
         el.textContent = t.periodsTitle[p];
       });
     });
-    UNLOCK_CATEGORIES.forEach((cat) => {
-      document.querySelectorAll(`[data-stat-label="${cat}"]`).forEach((el) => {
-        el.textContent = t.categoriesFull[cat];
-      });
-    });
 
     renderCodesCounter();
     applyLockState();
-    renderHistory();
   };
 
   elements.enabled.addEventListener("change", (event) => {
@@ -326,10 +262,12 @@ const UI = (() => {
     elements.generateCodesBtn.disabled = true;
     try {
       const { codes, hashes } = await generateCodeBatch(50);
-      const sealedBlob = await sealCodesForAi(codes);
+      const sealedBlob = sealCodesForAi(codes);
       await storage.set({
         customCodeHashes: hashes,
         usedCodeHashes: [],
+        // Sealed with the AI's public key, so keeping it lets the user re-copy it without revealing codes.
+        lastSealedBatch: sealedBlob,
       });
       elements.generatedCodesOutput.value = sealedBlob;
       elements.generatedCodesBox.hidden = false;
@@ -348,6 +286,64 @@ const UI = (() => {
     } catch {
       elements.generatedCodesOutput.select();
     }
+  });
+
+  elements.showLastBatchBtn.addEventListener("click", () => {
+    if (!currentState.lastSealedBatch) {
+      return;
+    }
+    elements.generatedCodesOutput.value = currentState.lastSealedBatch;
+    elements.generatedCodesBox.hidden = false;
+  });
+
+  elements.emergencyRequestBtn.addEventListener("click", () => {
+    storage.set({ emergencyUnlockRequestedAt: Date.now() });
+  });
+
+  elements.emergencyCancelBtn.addEventListener("click", () => {
+    storage.set({ emergencyUnlockRequestedAt: 0 });
+  });
+
+  elements.emergencyConfirmBtn.addEventListener("click", async () => {
+    elements.settingsUnlockError.hidden = true;
+
+    const { emergencyUnlockRequestedAt = 0, unlockHistory = [] } = await storage.get([
+      "emergencyUnlockRequestedAt",
+      "unlockHistory",
+    ]);
+    if (getEmergencyUnlockState(emergencyUnlockRequestedAt, Date.now()).status !== "READY") {
+      renderEmergencyState();
+      return;
+    }
+
+    const reason = elements.settingsUnlockReason.value.trim();
+    if (reason.length < MIN_SETTINGS_REASON_LENGTH) {
+      elements.settingsUnlockError.textContent = t.errReasonMin(MIN_SETTINGS_REASON_LENGTH);
+      elements.settingsUnlockError.hidden = false;
+      elements.settingsUnlockReason.focus();
+      return;
+    }
+
+    const now = Date.now();
+    const logEntry: UnlockLogEntry = {
+      id: `${now}-${Math.random().toString(36).slice(2, 8)}`,
+      timestamp: now,
+      url: "options.html",
+      rule: "SETTINGS",
+      category: "OTHER",
+      reason: `${t.emergencyHistoryPrefix}${reason}`,
+      durationMinutes: SETTINGS_UNLOCK_MINUTES,
+      kind: "SETTINGS_UNLOCK",
+    };
+
+    await storage.set({
+      emergencyUnlockRequestedAt: 0,
+      settingsUnlockedUntil: now + SETTINGS_UNLOCK_MINUTES * 60_000,
+      unlockHistory: [logEntry, ...unlockHistory],
+    });
+
+    elements.settingsUnlockReason.value = "";
+    elements.settingsUnlockForm.hidden = true;
   });
 
   elements.hideCodesBtn.addEventListener("click", () => {
@@ -461,27 +457,7 @@ const UI = (() => {
     elements.settingsUnlockForm.hidden = true;
   });
 
-  elements.historyPeriod.addEventListener("change", () => {
-    renderHistory();
-  });
-
-  elements.resetCountersBtn.addEventListener("click", () => {
-    if (isSettingsLocked()) {
-      return;
-    }
-    if (window.confirm(t.confirmResetCounters)) {
-      storage.set({ counter: {} });
-    }
-  });
-
-  elements.clearHistoryBtn.addEventListener("click", () => {
-    if (isSettingsLocked()) {
-      return;
-    }
-    if (window.confirm(t.confirmClearHistory)) {
-      storage.set({ unlockHistory: [] });
-    }
-  });
+  setupBackButton(elements.backBtn);
 
   window.setInterval(() => {
     applyLockState();
@@ -549,13 +525,16 @@ const UI = (() => {
       renderCodesCounter();
     }
 
-    if (items.unlockHistory !== undefined) {
-      currentState.unlockHistory = items.unlockHistory;
-      renderHistory();
-    }
-
     if (items.settingsUnlockedUntil !== undefined) {
       currentState.settingsUnlockedUntil = items.settingsUnlockedUntil;
+    }
+
+    if (items.emergencyUnlockRequestedAt !== undefined) {
+      currentState.emergencyUnlockRequestedAt = items.emergencyUnlockRequestedAt;
+    }
+
+    if (items.lastSealedBatch !== undefined) {
+      currentState.lastSealedBatch = items.lastSealedBatch;
     }
 
     applyLockState();
@@ -577,8 +556,9 @@ window.addEventListener("DOMContentLoaded", () => {
     "counterPeriod",
     "usedCodeHashes",
     "customCodeHashes",
-    "unlockHistory",
     "settingsUnlockedUntil",
+    "emergencyUnlockRequestedAt",
+    "lastSealedBatch",
   ];
 
   storage.get(keys).then((local) => {

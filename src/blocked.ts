@@ -13,11 +13,8 @@ import {
   verifyUnlockCode,
 } from "./helpers/unlock-codes";
 import { grantTemporaryUnlock } from "./helpers/temporary-unlock";
-import {
-  computeCategoryStats,
-  filterUnlockHistoryByPeriod,
-} from "./helpers/unlock-history";
 import { getTranslations, Translations } from "./helpers/i18n";
+import { wakeGhost } from "./helpers/ghost-wake";
 
 const COUNTDOWN_TOTAL_MS = 30_000;
 const MIN_REASON_LENGTH = 10;
@@ -60,7 +57,6 @@ window.addEventListener("DOMContentLoaded", () => {
   const closeTabButton = document.getElementById("close-tab-button") as HTMLButtonElement;
   const historyLink = document.getElementById("history-link") as HTMLAnchorElement;
   const settingsLink = document.getElementById("settings-link") as HTMLAnchorElement;
-  const awarenessStats = document.getElementById("awareness-stats") as HTMLDivElement;
 
   ringProgress.style.strokeDasharray = `${RING_CIRCUMFERENCE}`;
   ringProgress.style.strokeDashoffset = `${RING_CIRCUMFERENCE}`;
@@ -70,7 +66,6 @@ window.addEventListener("DOMContentLoaded", () => {
   let lastDisplayedStep = 30;
   let currentMode: UnlockMode = "PAUSE_AND_REASON";
   let t: Translations = getTranslations("pl");
-  let cachedHistory: UnlockLogEntry[] = [];
 
   const getRemainingSeconds = () =>
     Math.max(0, Math.ceil((COUNTDOWN_TOTAL_MS - elapsedMs) / 1000));
@@ -128,28 +123,13 @@ window.addEventListener("DOMContentLoaded", () => {
     formError.hidden = true;
   };
 
-  const renderAwareness = () => {
-    const weekHistory = filterUnlockHistoryByPeriod(cachedHistory, "THIS_WEEK");
-    const stats = computeCategoryStats(weekHistory, true);
-    if (stats.total > 0) {
-      const parts = (["BOREDOM", "RUMINATION", "NEED", "OTHER"] as UnlockCategory[])
-        .filter((cat) => stats.counts[cat] > 0)
-        .map((cat) => `${t.categories[cat]}: ${stats.counts[cat]}`);
-      if (parts.length > 0) {
-        awarenessStats.textContent = `${t.thisWeekPrefix} — ${parts.join(" · ")}`;
-        awarenessStats.hidden = false;
-        return;
-      }
-    }
-    awarenessStats.hidden = true;
-  };
-
   const updateSubmitState = () => {
     const reasonLen = reasonInput.value.trim().length;
     const hasCategory = getSelectedCategory() !== null;
     const requiresCode = currentMode === "PAUSE_REASON_AND_CODE";
     const hasCode = !requiresCode || aiCodeInput.value.trim().length > 0;
-    const countdownDone = elapsedMs >= COUNTDOWN_TOTAL_MS;
+    // A one-time code is already a deliberate permission, so it skips the 30s pause.
+    const countdownDone = elapsedMs >= COUNTDOWN_TOTAL_MS || requiresCode;
 
     reasonCounter.textContent = reasonLen >= MIN_REASON_LENGTH
       ? t.charsOk(reasonLen)
@@ -201,7 +181,6 @@ window.addEventListener("DOMContentLoaded", () => {
       }
     });
 
-    renderAwareness();
     updateSubmitState();
   };
 
@@ -236,6 +215,7 @@ window.addEventListener("DOMContentLoaded", () => {
       }
       countdownLabel.textContent = t.stillWantLabel;
       ringWrapper.classList.add("done");
+      wakeGhost(document.getElementById("blocked-ghost") as SVGSVGElement | null);
       countdownPausedHint.hidden = true;
       updateSubmitState();
       return;
@@ -303,14 +283,12 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  storage.get(["unlockMode", "unlockHistory", "language", "theme"]).then(({
+  storage.get(["unlockMode", "language", "theme"]).then(({
     unlockMode,
-    unlockHistory,
     language,
     theme,
   }) => {
     currentMode = unlockMode || "PAUSE_AND_REASON";
-    cachedHistory = unlockHistory || [];
     aiCodeInput.hidden = currentMode !== "PAUSE_REASON_AND_CODE";
     applyTheme(theme || "LIGHT");
     applyLanguage(language || "pl");
@@ -335,7 +313,7 @@ window.addEventListener("DOMContentLoaded", () => {
     event.preventDefault();
     clearError();
 
-    if (elapsedMs < COUNTDOWN_TOTAL_MS) {
+    if (elapsedMs < COUNTDOWN_TOTAL_MS && currentMode !== "PAUSE_REASON_AND_CODE") {
       showError(t.errWait(getRemainingSeconds()));
       return;
     }

@@ -9,6 +9,7 @@ export default defineConfig({
     "src/background.ts",
     "src/blocked.ts",
     "src/options.ts",
+    "src/history.ts",
   ],
   env: { TARGET },
   outDir: `dist/${TARGET}`,
@@ -21,13 +22,17 @@ export default defineConfig({
   },
   onSuccess: () => new Promise((resolve, reject) => {
     const files = [
+      "icon_16.png",
       "icon_32.png",
+      "icon_48.png",
       "icon_128.png",
+      "ghost.svg",
       "common.css",
       "blocked.css",
       "blocked.html",
       "options.css",
       "options.html",
+      "history.html",
       `manifest-${TARGET}.json`,
     ];
 

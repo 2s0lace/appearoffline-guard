@@ -69,6 +69,8 @@ export interface Schema {
   customCodeHashes: string[]
   unlockHistory: UnlockLogEntry[]
   settingsUnlockedUntil: number
+  emergencyUnlockRequestedAt: number
+  lastSealedBatch: string
 }
 
 export const DEFAULTS: Readonly<Schema> = {
@@ -87,6 +89,8 @@ export const DEFAULTS: Readonly<Schema> = {
   customCodeHashes: [],
   unlockHistory: [],
   settingsUnlockedUntil: 0,
+  emergencyUnlockRequestedAt: 0,
+  lastSealedBatch: "",
 };
 
 export const VALIDATORS: Readonly<Record<keyof Schema, (value: unknown) => boolean>> = {
@@ -105,6 +109,8 @@ export const VALIDATORS: Readonly<Record<keyof Schema, (value: unknown) => boole
   customCodeHashes: (value) => Array.isArray(value),
   unlockHistory: (value) => Array.isArray(value),
   settingsUnlockedUntil: (value) => typeof value === "number" && !Number.isNaN(value),
+  emergencyUnlockRequestedAt: (value) => typeof value === "number" && !Number.isNaN(value),
+  lastSealedBatch: (value) => typeof value === "string",
 };
 
 export const BLOCKED_EXAMPLE: string[] = [

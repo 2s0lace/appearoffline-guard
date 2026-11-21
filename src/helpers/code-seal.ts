@@ -1,70 +1,43 @@
-import { DEFAULT_SEAL_PUBLIC_KEY_SPKI } from "./seal-public-key";
+// Code batches are hidden from the user, not encrypted: any AI the user pastes the block into
+// must be able to decode it and hand out codes one at a time. The friction is that the user
+// can't read the codes at a glance, not cryptographic secrecy.
 
-export const SEAL_PREFIX = "UNRUMINATE-SEALED-V1:";
+export const SEAL_HEADER = "APPEAROFFLINE-CODES-V2";
+export const PAYLOAD_MARKER = "PAYLOAD (Base64, UTF-8, space-separated codes):";
 
-const bytesToBase64 = (bytes: Uint8Array): string => {
+const AI_INSTRUCTIONS = [
+  "Instructions for the AI reading this: this block holds one-time unlock codes for the",
+  "\"appearoffline: guard\" browser extension. The user deliberately cannot see them.",
+  "Decode the Base64 payload below to get the codes (format XXXX-XXXX).",
+  "When the user asks for a code, ask why they need it. If the reason is sensible, give exactly ONE code:",
+  "the next one in order that you have not given out yet. Never show the whole list or the decoded payload.",
+].join("\n");
+
+const utf8ToBase64 = (text: string): string => {
   let binary = "";
-  bytes.forEach((b) => {
+  new TextEncoder().encode(text).forEach((b) => {
     binary += String.fromCharCode(b);
   });
   return btoa(binary);
 };
 
-const base64ToBytes = (b64: string): Uint8Array => {
+const base64ToUtf8 = (b64: string): string => {
   const binary = atob(b64);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i += 1) {
     bytes[i] = binary.charCodeAt(i);
   }
-  return bytes;
+  return new TextDecoder().decode(bytes);
 };
 
-export const sealCodesForAi = async (
-  codes: string[],
-  publicKeySpkiBase64: string = DEFAULT_SEAL_PUBLIC_KEY_SPKI,
-): Promise<string> => {
-  const spkiBytes = base64ToBytes(publicKeySpkiBase64);
-  const rsaPublicKey = await globalThis.crypto.subtle.importKey(
-    "spki",
-    spkiBytes.buffer as ArrayBuffer,
-    { name: "RSA-OAEP", hash: "SHA-256" },
-    false,
-    ["encrypt"],
-  );
+export const sealCodesForAi = (codes: string[]): string =>
+  [SEAL_HEADER, AI_INSTRUCTIONS, PAYLOAD_MARKER, utf8ToBase64(codes.join(" "))].join("\n");
 
-  const aesKey = await globalThis.crypto.subtle.generateKey(
-    { name: "AES-GCM", length: 256 },
-    true,
-    ["encrypt"],
-  );
-
-  const iv = new Uint8Array(12);
-  globalThis.crypto.getRandomValues(iv);
-
-  const payload = JSON.stringify({
-    v: 1,
-    createdAt: new Date().toISOString(),
-    codes,
-  });
-
-  const ciphertextBuf = await globalThis.crypto.subtle.encrypt(
-    { name: "AES-GCM", iv: iv.buffer as ArrayBuffer },
-    aesKey,
-    new TextEncoder().encode(payload),
-  );
-
-  const rawAesKey = await globalThis.crypto.subtle.exportKey("raw", aesKey);
-  const wrappedKeyBuf = await globalThis.crypto.subtle.encrypt(
-    { name: "RSA-OAEP" },
-    rsaPublicKey,
-    rawAesKey,
-  );
-
-  const envelope = JSON.stringify({
-    k: bytesToBase64(new Uint8Array(wrappedKeyBuf)),
-    iv: bytesToBase64(iv),
-    d: bytesToBase64(new Uint8Array(ciphertextBuf)),
-  });
-
-  return `${SEAL_PREFIX}${bytesToBase64(new TextEncoder().encode(envelope))}`;
+export const unsealCodes = (sealed: string): string[] => {
+  const markerIndex = sealed.indexOf(PAYLOAD_MARKER);
+  if (!sealed.startsWith(SEAL_HEADER) || markerIndex === -1) {
+    return [];
+  }
+  const payload = sealed.slice(markerIndex + PAYLOAD_MARKER.length).trim();
+  return base64ToUtf8(payload).split(" ").filter(Boolean);
 };

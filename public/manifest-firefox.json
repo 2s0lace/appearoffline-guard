@@ -1,15 +1,19 @@
 {
   "manifest_version": 3,
-  "name": "Unruminate",
+  "name": "appearoffline: guard",
   "description": "Mindful website blocker that breaks rumination loops with a 30s pause, logged reason, and optional one-time AI/partner unlock codes.",
   "version": "8.2.1",
   "icons": {
+    "16": "icon_16.png",
     "32": "icon_32.png",
+    "48": "icon_48.png",
     "128": "icon_128.png"
   },
   "action": {
     "default_icon": {
+      "16": "icon_16.png",
       "32": "icon_32.png",
+      "48": "icon_48.png",
       "128": "icon_128.png"
     }
   },

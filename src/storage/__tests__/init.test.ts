@@ -23,6 +23,8 @@ test("getRevisitedSchema() returns defaults for any invalid attribute", () => {
     customCodeHashes: DEFAULTS.customCodeHashes,
     unlockHistory: DEFAULTS.unlockHistory,
     settingsUnlockedUntil: DEFAULTS.settingsUnlockedUntil,
+    emergencyUnlockRequestedAt: DEFAULTS.emergencyUnlockRequestedAt,
+    lastSealedBatch: DEFAULTS.lastSealedBatch,
   } as Partial<Schema>);
 
   expect(getRevisitedSchema({

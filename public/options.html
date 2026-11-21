@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="utf-8">
-  <title>Unruminate — Opcje i historia</title>
+  <title>appearoffline: guard — Opcje i historia</title>
   <link rel="stylesheet" href="common.css">
   <link rel="stylesheet" href="options.css">
   <link rel="icon" type="image/png" href="icon_32.png">
@@ -11,9 +11,14 @@
 </head>
 
 <body>
+  <nav class="page-nav">
+    <button id="back-btn" type="button" class="btn-ghost" hidden>← Wróć</button>
+    <a id="history-nav-link" href="history.html" class="nav-link">Historia</a>
+  </nav>
+
   <h1>
     <img src="icon_128.png" alt="">
-    <span>Unruminate</span>
+    <span>appearoffline: guard</span>
   </h1>
 
   <div id="lock-banner" class="lock-banner" hidden>
@@ -45,6 +50,18 @@
       <button id="settings-unlock-confirm-btn" type="submit" class="btn-primary">Potwierdź</button>
     </div>
     <div id="settings-unlock-error" class="form-error" hidden></div>
+
+    <div id="emergency-unlock" class="emergency-unlock">
+      <div class="emergency-unlock-info">
+        <strong id="emergency-title">Nie masz kodu?</strong>
+        <span id="emergency-desc">Awaryjne odblokowanie działa bez kodu, ale dopiero 24 h po zgłoszeniu prośby. Powód zapisze się w historii.</span>
+      </div>
+      <div class="emergency-unlock-actions">
+        <button id="emergency-request-btn" type="button" class="btn-secondary">Poproś o awaryjne odblokowanie</button>
+        <button id="emergency-cancel-btn" type="button" class="btn-secondary" hidden>Anuluj prośbę</button>
+        <button id="emergency-confirm-btn" type="button" class="btn-primary" hidden>Odblokuj awaryjnie</button>
+      </div>
+    </div>
   </form>
 
   <div class="options">
@@ -59,8 +76,8 @@
     <div id="unlock-mode-option" class="option">
       <label id="label-unlock-mode" for="unlock-mode">Tryb odblokowania:</label>
       <select id="unlock-mode">
-        <option id="opt-mode-standard" value="PAUSE_AND_REASON">Standardowy (30s pauzy + zapis powodu)</option>
-        <option id="opt-mode-code" value="PAUSE_REASON_AND_CODE">Z kodem (30s pauzy + powód + jednorazowy kod AI / partnera)</option>
+        <option id="opt-mode-standard" value="PAUSE_AND_REASON">Standardowy — 30 s pauzy + powód</option>
+        <option id="opt-mode-code" value="PAUSE_REASON_AND_CODE">Z kodem — powód + jednorazowy kod</option>
       </select>
     </div>
 
@@ -83,11 +100,35 @@
       </select>
     </div>
 
-    <div id="codes-option" class="option" hidden>
-      <label id="label-codes-pool">Pula kodów:</label>
+    <div id="context-menu-option" class="option">
+      <label id="label-context-menu" for="context-menu">Menu kontekstowe?</label>
+      <select id="context-menu">
+        <option value="YES" data-i18n-yes>Tak</option>
+        <option value="NO" data-i18n-no>Nie</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="codes-section" class="options codes-section">
+    <div id="codes-option" class="codes-pool" hidden>
+      <div class="codes-pool-head">
+        <div class="codes-pool-title">
+          <h2 id="label-codes-pool">Pula kodów</h2>
+          <span id="codes-pool-desc">Jednorazowe kody, które wydaje Ci AI. Każdy działa tylko raz.</span>
+        </div>
+        <div class="codes-count">
+          <span id="codes-count-value" class="codes-count-value">0</span>
+          <span id="options-codes-remaining" class="codes-count-label"></span>
+        </div>
+      </div>
+
+      <div class="codes-meter" aria-hidden="true">
+        <div id="codes-meter-fill" class="codes-meter-fill"></div>
+      </div>
+
       <div class="codes-controls">
-        <span id="options-codes-remaining" class="codes-badge"></span>
-        <button id="generate-codes-btn" type="button" class="btn-secondary">Wygeneruj nową paczkę 50 kodów</button>
+        <button id="generate-codes-btn" type="button" class="btn-primary">Wygeneruj nową paczkę 50 kodów</button>
+        <button id="show-last-batch-btn" type="button" class="btn-secondary" hidden>Pokaż ostatnią paczkę</button>
       </div>
     </div>
 
@@ -103,13 +144,6 @@
       </div>
     </div>
 
-    <div id="context-menu-option" class="option">
-      <label id="label-context-menu" for="context-menu">Menu kontekstowe?</label>
-      <select id="context-menu">
-        <option value="YES" data-i18n-yes>Tak</option>
-        <option value="NO" data-i18n-no>Nie</option>
-      </select>
-    </div>
   </div>
 
   <form id="quick-add-form" class="quick-add-form">
@@ -159,50 +193,7 @@
     </div>
   </div>
 
-  <section id="history-section" class="history-section">
-    <div class="history-header">
-      <h2 id="history-heading">Historia i statystyki wejść</h2>
-      <div class="history-controls">
-        <select id="history-period">
-          <option value="TODAY" data-period-opt="TODAY">Dzisiaj</option>
-          <option value="THIS_WEEK" data-period-opt="THIS_WEEK" selected>Ten tydzień</option>
-          <option value="THIS_MONTH" data-period-opt="THIS_MONTH">Ten miesiąc</option>
-          <option value="ALL_TIME" data-period-opt="ALL_TIME">Cały czas</option>
-        </select>
-        <button id="reset-counters-btn" type="button" class="btn-secondary">Resetuj liczniki</button>
-        <button id="clear-history-btn" type="button" class="btn-danger">Wyczyść historię</button>
-      </div>
-    </div>
-
-    <div class="stats-grid">
-      <div class="stat-card cat-BOREDOM">
-        <div class="stat-label" data-stat-label="BOREDOM">Nuda / Prokrastynacja</div>
-        <div id="stat-BOREDOM" class="stat-value">0</div>
-        <div id="stat-pct-BOREDOM" class="stat-pct">0%</div>
-      </div>
-      <div class="stat-card cat-RUMINATION">
-        <div class="stat-label" data-stat-label="RUMINATION">Ruminacja / Impuls</div>
-        <div id="stat-RUMINATION" class="stat-value">0</div>
-        <div id="stat-pct-RUMINATION" class="stat-pct">0%</div>
-      </div>
-      <div class="stat-card cat-NEED">
-        <div class="stat-label" data-stat-label="NEED">Potrzeba / Cel</div>
-        <div id="stat-NEED" class="stat-value">0</div>
-        <div id="stat-pct-NEED" class="stat-pct">0%</div>
-      </div>
-      <div class="stat-card cat-OTHER">
-        <div class="stat-label" data-stat-label="OTHER">Inne</div>
-        <div id="stat-OTHER" class="stat-value">0</div>
-        <div id="stat-pct-OTHER" class="stat-pct">0%</div>
-      </div>
-    </div>
-
-    <div id="history-empty" class="history-empty">
-      Brak zapisanych odblokowań w wybranym okresie.
-    </div>
-
-    <div id="history-list" class="history-list"></div>
-  </section>
+  <img class="ghost options-ghost" src="ghost.svg" alt="" aria-hidden="true">
 
   <p id="credits">
     Na podstawie <a target="_blank" href="https://github.com/penge/block-site">penge/block-site</a> (MIT)

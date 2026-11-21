@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pl">
+
+<head>
+  <meta charset="utf-8">
+  <title>appearoffline: guard — Historia</title>
+  <link rel="stylesheet" href="common.css">
+  <link rel="stylesheet" href="options.css">
+  <link rel="icon" type="image/png" href="icon_32.png">
+  <script type="module" src="history.mjs"></script>
+</head>
+
+<body>
+  <nav class="page-nav">
+    <button id="back-btn" type="button" class="btn-ghost" hidden>← Wróć</button>
+    <a id="settings-nav-link" href="options.html" class="nav-link">Ustawienia</a>
+  </nav>
+
+  <h1>
+    <img src="icon_128.png" alt="">
+    <span id="history-heading">Historia i statystyki wejść</span>
+  </h1>
+
+  <section class="history-section">
+    <div class="history-header">
+      <select id="history-period" aria-label="Okres">
+        <option value="TODAY" data-period-opt="TODAY">Dzisiaj</option>
+        <option value="THIS_WEEK" data-period-opt="THIS_WEEK" selected>Ten tydzień</option>
+        <option value="THIS_MONTH" data-period-opt="THIS_MONTH">Ten miesiąc</option>
+        <option value="ALL_TIME" data-period-opt="ALL_TIME">Cały czas</option>
+      </select>
+      <div class="history-controls">
+        <button id="reset-counters-btn" type="button" class="btn-secondary">Resetuj liczniki</button>
+        <button id="clear-history-btn" type="button" class="btn-danger">Wyczyść historię</button>
+      </div>
+    </div>
+
+    <p id="history-locked-hint" class="history-locked-hint" hidden></p>
+
+    <div class="stats-grid">
+      <div class="stat-card cat-BOREDOM">
+        <div class="stat-label" data-stat-label="BOREDOM">Nuda / Prokrastynacja</div>
+        <div id="stat-BOREDOM" class="stat-value">0</div>
+        <div id="stat-pct-BOREDOM" class="stat-pct">0%</div>
+      </div>
+      <div class="stat-card cat-RUMINATION">
+        <div class="stat-label" data-stat-label="RUMINATION">Ruminacja / Impuls</div>
+        <div id="stat-RUMINATION" class="stat-value">0</div>
+        <div id="stat-pct-RUMINATION" class="stat-pct">0%</div>
+      </div>
+      <div class="stat-card cat-NEED">
+        <div class="stat-label" data-stat-label="NEED">Potrzeba / Cel</div>
+        <div id="stat-NEED" class="stat-value">0</div>
+        <div id="stat-pct-NEED" class="stat-pct">0%</div>
+      </div>
+      <div class="stat-card cat-OTHER">
+        <div class="stat-label" data-stat-label="OTHER">Inne</div>
+        <div id="stat-OTHER" class="stat-value">0</div>
+        <div id="stat-pct-OTHER" class="stat-pct">0%</div>
+      </div>
+    </div>
+
+    <div id="history-empty" class="history-empty">
+      <img class="ghost ghost-float" src="ghost.svg" alt="" aria-hidden="true">
+      <span id="history-empty-text">Brak zapisanych odblokowań w wybranym okresie.</span>
+    </div>
+
+    <div id="history-list" class="history-list"></div>
+  </section>
+</body>
+
+</html>
