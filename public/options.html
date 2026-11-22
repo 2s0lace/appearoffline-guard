@@ -21,6 +21,46 @@
     <span>appearoffline: guard</span>
   </h1>
 
+  <section id="account-section" class="options account-section">
+    <div class="account-head">
+      <div class="account-title-wrap">
+        <h2 id="account-title">Konto</h2>
+        <span id="account-desc">Podłącz konto Supabase (e-mail i hasło).</span>
+      </div>
+      <div id="account-connected" class="account-connected" hidden>
+        <span class="account-status-pill">
+          <span class="account-dot" aria-hidden="true"></span>
+          <span id="account-email-label"></span>
+        </span>
+        <button id="account-sync-btn" type="button" class="btn-secondary">Synchronizuj teraz</button>
+        <button id="account-signout-btn" type="button" class="btn-secondary">Wyloguj się</button>
+      </div>
+    </div>
+
+    <form id="account-form" class="account-form" novalidate>
+      <div class="account-inputs">
+        <input
+          id="account-email"
+          type="email"
+          autocomplete="email"
+          placeholder="E-mail"
+        >
+        <input
+          id="account-password"
+          type="password"
+          autocomplete="current-password"
+          placeholder="Hasło (min. 6 znaków)"
+        >
+      </div>
+      <div class="account-actions">
+        <button id="account-signin-btn" type="submit" class="btn-primary">Zaloguj się</button>
+        <button id="account-signup-btn" type="button" class="btn-secondary">Załóż konto</button>
+      </div>
+    </form>
+
+    <div id="account-message" class="account-message" hidden></div>
+  </section>
+
   <div id="lock-banner" class="lock-banner" hidden>
     <div class="lock-banner-info">
       <strong id="lock-status-title">Ustawienia są chronione kodem</strong>

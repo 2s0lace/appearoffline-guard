@@ -24,6 +24,9 @@ const getAll = () => get([
   "customCodeHashes",
   "unlockHistory",
   "settingsUnlockedUntil",
+  "emergencyUnlockRequestedAt",
+  "lastSealedBatch",
+  "accountSession",
 ]);
 
 export default {

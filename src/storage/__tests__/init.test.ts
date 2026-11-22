@@ -25,6 +25,7 @@ test("getRevisitedSchema() returns defaults for any invalid attribute", () => {
     settingsUnlockedUntil: DEFAULTS.settingsUnlockedUntil,
     emergencyUnlockRequestedAt: DEFAULTS.emergencyUnlockRequestedAt,
     lastSealedBatch: DEFAULTS.lastSealedBatch,
+    accountSession: DEFAULTS.accountSession,
   } as Partial<Schema>);
 
   expect(getRevisitedSchema({

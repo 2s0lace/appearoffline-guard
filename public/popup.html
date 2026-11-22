@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pl">
+
+<head>
+  <meta charset="utf-8">
+  <title>appearoffline: guard</title>
+  <link rel="stylesheet" href="common.css">
+  <link rel="stylesheet" href="popup.css">
+  <script type="module" src="popup.mjs"></script>
+</head>
+
+<body>
+  <div class="popup">
+    <header class="popup-head">
+      <div class="popup-brand">
+        <img src="icon_48.png" alt="" width="24" height="24">
+        <div class="popup-brand-text">
+          <span class="popup-title">appearoffline: guard</span>
+          <span id="popup-blocked-count" class="popup-subtitle">0 stron na liście</span>
+        </div>
+      </div>
+      <button id="popup-status-btn" type="button" class="status-pill">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span id="popup-status-text">Wyłączona</span>
+      </button>
+    </header>
+
+    <section id="popup-site-card" class="popup-card" hidden>
+      <div class="popup-site-host" id="popup-site-host"></div>
+      <button id="popup-block-site-btn" type="button" class="btn-primary popup-full-btn">
+        Zablokuj tę stronę
+      </button>
+    </section>
+
+    <section class="popup-card popup-account">
+      <div class="popup-account-row">
+        <div class="popup-account-info">
+          <span id="popup-account-dot" class="account-dot" hidden aria-hidden="true"></span>
+          <span id="popup-account-text" class="popup-muted">Brak konta</span>
+        </div>
+        <button id="popup-sync-btn" type="button" class="btn-secondary popup-sm-btn" hidden>Sync</button>
+        <button id="popup-login-btn" type="button" class="btn-secondary popup-sm-btn">Zaloguj</button>
+      </div>
+      <div id="popup-sync-status" class="popup-sync-status" hidden></div>
+    </section>
+
+    <section id="popup-stats" class="popup-stats" hidden>
+      <div class="popup-stats-title" id="popup-stats-title">Ten tydzień</div>
+      <div class="popup-stats-grid">
+        <div class="popup-stat cat-BOREDOM">
+          <span class="popup-stat-label" id="popup-lbl-boredom">Nuda</span>
+          <strong id="popup-val-boredom">0</strong>
+        </div>
+        <div class="popup-stat cat-RUMINATION">
+          <span class="popup-stat-label" id="popup-lbl-rumination">Ruminacja</span>
+          <strong id="popup-val-rumination">0</strong>
+        </div>
+        <div class="popup-stat cat-NEED">
+          <span class="popup-stat-label" id="popup-lbl-need">Potrzeba</span>
+          <strong id="popup-val-need">0</strong>
+        </div>
+      </div>
+    </section>
+
+    <footer class="popup-footer">
+      <button id="popup-history-btn" type="button" class="btn-secondary popup-nav-btn">Historia</button>
+      <button id="popup-options-btn" type="button" class="btn-secondary popup-nav-btn">Ustawienia</button>
+    </footer>
+  </div>
+</body>
+
+</html>

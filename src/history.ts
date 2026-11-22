@@ -15,6 +15,10 @@ import {
 import { getTranslations, Translations } from "./helpers/i18n";
 import { isSettingsLocked } from "./helpers/settings-lock";
 import { setupBackButton } from "./helpers/back-button";
+import {
+  clearHistoryInCloud,
+  deleteHistoryEntryFromCloud,
+} from "./helpers/supabase-sync";
 
 const KEYS: (keyof Schema)[] = [
   "enabled",
@@ -118,6 +122,11 @@ window.addEventListener("DOMContentLoaded", () => {
           return;
         }
         storage.set({ unlockHistory: state.unlockHistory.filter((e) => e.id !== entry.id) });
+        storage.get(["accountSession"]).then(({ accountSession }) => {
+          if (accountSession) {
+            deleteHistoryEntryFromCloud(accountSession, entry.id);
+          }
+        });
       });
 
       right.appendChild(timeEl);
@@ -197,6 +206,11 @@ window.addEventListener("DOMContentLoaded", () => {
   clearHistoryBtn.addEventListener("click", () => {
     if (!locked() && window.confirm(t.confirmClearHistory)) {
       storage.set({ unlockHistory: [] });
+      storage.get(["accountSession"]).then(({ accountSession }) => {
+        if (accountSession) {
+          clearHistoryInCloud(accountSession);
+        }
+      });
     }
   });
 

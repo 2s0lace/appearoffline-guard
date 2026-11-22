@@ -21,6 +21,16 @@ import { sealCodesForAi } from "./helpers/code-seal";
 import { getTranslations, Translations } from "./helpers/i18n";
 import { formatRemaining, getEmergencyUnlockState } from "./helpers/emergency-unlock";
 import { setupBackButton } from "./helpers/back-button";
+import {
+  refreshSession,
+  signInWithPassword,
+  signOut,
+  signUpWithPassword,
+} from "./helpers/supabase-auth";
+import {
+  pushSettingsToCloud,
+  syncAllWithCloud,
+} from "./helpers/supabase-sync";
 
 const SETTINGS_UNLOCK_MINUTES = 5;
 const MIN_SETTINGS_REASON_LENGTH = 10;
@@ -63,6 +73,16 @@ const UI = (() => {
     emergencyRequestBtn: document.getElementById("emergency-request-btn") as HTMLButtonElement,
     emergencyCancelBtn: document.getElementById("emergency-cancel-btn") as HTMLButtonElement,
     emergencyConfirmBtn: document.getElementById("emergency-confirm-btn") as HTMLButtonElement,
+    accountConnected: document.getElementById("account-connected") as HTMLDivElement,
+    accountEmailLabel: document.getElementById("account-email-label") as HTMLSpanElement,
+    accountSyncBtn: document.getElementById("account-sync-btn") as HTMLButtonElement,
+    accountSignOutBtn: document.getElementById("account-signout-btn") as HTMLButtonElement,
+    accountForm: document.getElementById("account-form") as HTMLFormElement,
+    accountEmail: document.getElementById("account-email") as HTMLInputElement,
+    accountPassword: document.getElementById("account-password") as HTMLInputElement,
+    accountSignInBtn: document.getElementById("account-signin-btn") as HTMLButtonElement,
+    accountSignUpBtn: document.getElementById("account-signup-btn") as HTMLButtonElement,
+    accountMessage: document.getElementById("account-message") as HTMLDivElement,
   };
 
   elements.blockedList.placeholder = BLOCKED_EXAMPLE.join("\n");
@@ -70,7 +90,7 @@ const UI = (() => {
   const currentState: Pick<
     Schema,
     "enabled" | "unlockMode" | "language" | "theme" | "blocked" | "usedCodeHashes" | "customCodeHashes" | "settingsUnlockedUntil"
-    | "emergencyUnlockRequestedAt" | "lastSealedBatch"
+    | "emergencyUnlockRequestedAt" | "lastSealedBatch" | "accountSession"
   > = {
     enabled: false,
     unlockMode: "PAUSE_AND_REASON",
@@ -82,6 +102,7 @@ const UI = (() => {
     settingsUnlockedUntil: 0,
     emergencyUnlockRequestedAt: 0,
     lastSealedBatch: "",
+    accountSession: null,
   };
 
   let t: Translations = getTranslations("pl");
@@ -133,6 +154,154 @@ const UI = (() => {
     } else {
       elements.emergencyDesc.textContent = t.emergencyDesc;
     }
+  };
+
+  const renderAccountState = () => {
+    const session = currentState.accountSession;
+    const isSignedIn = Boolean(session && session.accessToken);
+    elements.accountConnected.hidden = !isSignedIn;
+    elements.accountForm.hidden = isSignedIn;
+    if (isSignedIn && session) {
+      elements.accountEmailLabel.textContent = t.accountConnectedAs(session.user.email);
+    }
+  };
+
+  const showAccountMessage = (text: string, isError = false) => {
+    elements.accountMessage.textContent = text;
+    elements.accountMessage.classList.toggle("is-error", isError);
+    elements.accountMessage.hidden = !text;
+  };
+
+  const setAccountBusy = (busy: boolean) => {
+    elements.accountSignInBtn.disabled = busy;
+    elements.accountSignUpBtn.disabled = busy;
+    elements.accountEmail.disabled = busy;
+    elements.accountPassword.disabled = busy;
+    elements.accountSignInBtn.textContent = busy ? t.accountSigningIn : t.accountSignInBtn;
+  };
+
+  const runCloudSync = async () => {
+    elements.accountSyncBtn.disabled = true;
+    elements.accountSyncBtn.textContent = t.accountSyncing;
+    try {
+      const res = await syncAllWithCloud();
+      if (!res.ok) {
+        showAccountMessage(res.error, true);
+        return;
+      }
+      const timeStr = new Date(res.syncedAt).toLocaleTimeString(t.locale, {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      showAccountMessage(t.accountSyncedAt(timeStr, res.historyCount), false);
+    } finally {
+      elements.accountSyncBtn.disabled = false;
+      elements.accountSyncBtn.textContent = t.accountSyncNowBtn;
+    }
+  };
+
+  let settingsPushTimer: number | null = null;
+  const scheduleSettingsCloudPush = () => {
+    if (!currentState.accountSession) {
+      return;
+    }
+    if (settingsPushTimer !== null) {
+      window.clearTimeout(settingsPushTimer);
+    }
+    settingsPushTimer = window.setTimeout(() => {
+      settingsPushTimer = null;
+      storage.get([
+        "accountSession",
+        "blocked",
+        "unlockMode",
+        "language",
+        "theme",
+        "resolution",
+        "counterShow",
+        "counterPeriod",
+      ]).then((s) => {
+        if (!s.accountSession) {
+          return;
+        }
+        pushSettingsToCloud(s.accountSession, {
+          blocked: s.blocked || [],
+          unlockMode: s.unlockMode || "PAUSE_AND_REASON",
+          language: s.language || "pl",
+          theme: s.theme || "LIGHT",
+          resolution: s.resolution || "SHOW_BLOCKED_INFO_PAGE",
+          counterShow: s.counterShow ?? true,
+          counterPeriod: s.counterPeriod || "ALL_TIME",
+        });
+      });
+    }, 800);
+  };
+
+  const handleAccountAuth = async (mode: "SIGN_IN" | "SIGN_UP") => {
+    showAccountMessage("");
+    const email = elements.accountEmail.value.trim();
+    const password = elements.accountPassword.value;
+    if (!email || password.length < 6) {
+      showAccountMessage(t.accountFillFields, true);
+      return;
+    }
+
+    setAccountBusy(true);
+    try {
+      const result = mode === "SIGN_IN"
+        ? await signInWithPassword(email, password)
+        : await signUpWithPassword(email, password);
+
+      if (!result.ok) {
+        showAccountMessage(result.error, true);
+        return;
+      }
+
+      if (result.status === "CONFIRM_EMAIL") {
+        showAccountMessage(t.accountConfirmEmail(result.email), false);
+        elements.accountPassword.value = "";
+        return;
+      }
+
+      await storage.set({ accountSession: result.session });
+      currentState.accountSession = result.session;
+      elements.accountEmail.value = "";
+      elements.accountPassword.value = "";
+      showAccountMessage(t.accountSignedInOk, false);
+      await runCloudSync();
+    } finally {
+      setAccountBusy(false);
+    }
+  };
+
+  elements.accountSyncBtn.addEventListener("click", () => {
+    runCloudSync();
+  });
+
+  elements.accountForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    handleAccountAuth("SIGN_IN");
+  });
+
+  elements.accountSignUpBtn.addEventListener("click", () => {
+    handleAccountAuth("SIGN_UP");
+  });
+
+  elements.accountSignOutBtn.addEventListener("click", async () => {
+    const token = currentState.accountSession?.accessToken;
+    await storage.set({ accountSession: null });
+    showAccountMessage("");
+    if (token) {
+      await signOut(token);
+    }
+  });
+
+  const renderBlockedSitesHeading = () => {
+    const heading = document.getElementById("blocked-sites-heading");
+    if (!heading) {
+      return;
+    }
+    const count = currentState.blocked.filter((line) => line.trim() && !line.trim().startsWith("#")).length;
+    heading.textContent = `${t.blockedSitesHeading} (${count})`;
   };
 
   const applyLockState = () => {
@@ -205,13 +374,21 @@ const UI = (() => {
     setText("emergency-confirm-btn", t.emergencyConfirmBtn);
     setText("label-context-menu", t.contextMenuLabel);
     setText("quick-add-btn", t.addSiteBtn);
-    setText("blocked-sites-heading", t.blockedSitesHeading);
+    renderBlockedSitesHeading();
     setText("label-resolution", t.resolutionLabel);
     setText("opt-res-page", t.resShowPage);
     setText("opt-res-close", t.resCloseTab);
     setText("label-counter-show", t.showCounterLabel);
     setText("label-counter-period", t.counterPeriodLabel);
     setText("history-nav-link", t.historyNavLink);
+    setText("account-title", t.accountTitle);
+    setText("account-desc", t.accountDesc);
+    setText("account-signin-btn", t.accountSignInBtn);
+    setText("account-signup-btn", t.accountSignUpBtn);
+    setText("account-sync-btn", t.accountSyncNowBtn);
+    setText("account-signout-btn", t.accountSignOutBtn);
+    elements.accountEmail.placeholder = t.accountEmailPlaceholder;
+    elements.accountPassword.placeholder = t.accountPasswordPlaceholder;
     elements.backBtn.textContent = `← ${t.backBtn}`;
 
     elements.settingsUnlockReason.placeholder = t.settingsReasonPlaceholder;
@@ -231,6 +408,7 @@ const UI = (() => {
     });
 
     renderCodesCounter();
+    renderAccountState();
     applyLockState();
   };
 
@@ -250,16 +428,19 @@ const UI = (() => {
     }
     const unlockMode = getEventTargetValue(event) as UnlockMode;
     storage.set({ unlockMode });
+    scheduleSettingsCloudPush();
   });
 
   elements.language.addEventListener("change", (event) => {
     const language = getEventTargetValue(event) as Language;
     storage.set({ language });
+    scheduleSettingsCloudPush();
   });
 
   elements.theme.addEventListener("change", (event) => {
     const theme = getEventTargetValue(event) as Theme;
     storage.set({ theme });
+    scheduleSettingsCloudPush();
   });
 
   const showAiBatchBox = (sealedBlob: string) => {
@@ -441,6 +622,7 @@ const UI = (() => {
     }
     const blocked = stringToBlocked(getEventTargetValue(event));
     storage.set({ blocked });
+    scheduleSettingsCloudPush();
   });
 
   elements.quickAddForm.addEventListener("submit", (event) => {
@@ -455,6 +637,7 @@ const UI = (() => {
     }
     if (!currentState.blocked.includes(cleaned)) {
       storage.set({ blocked: [...currentState.blocked, cleaned] });
+      scheduleSettingsCloudPush();
     }
     elements.quickAddInput.value = "";
   });
@@ -465,16 +648,19 @@ const UI = (() => {
     }
     const resolution = getEventTargetValue(event) as Resolution;
     storage.set({ resolution });
+    scheduleSettingsCloudPush();
   });
 
   elements.counterShow.addEventListener("change", (event) => {
     const counterShow = stringToBoolean(getEventTargetValue(event));
     storage.set({ counterShow });
+    scheduleSettingsCloudPush();
   });
 
   elements.counterPeriod.addEventListener("change", (event) => {
     const counterPeriod = getEventTargetValue(event) as CounterPeriod;
     storage.set({ counterPeriod });
+    scheduleSettingsCloudPush();
   });
 
   elements.toggleUnlockSettingsBtn.addEventListener("click", () => {
@@ -575,6 +761,7 @@ const UI = (() => {
       if (JSON.stringify(valueAsBlocked) !== JSON.stringify(items.blocked)) {
         elements.blockedList.value = items.blocked.join("\r\n");
       }
+      renderBlockedSitesHeading();
     }
 
     if (items.resolution !== undefined) {
@@ -616,6 +803,11 @@ const UI = (() => {
       currentState.lastSealedBatch = items.lastSealedBatch;
     }
 
+    if (items.accountSession !== undefined) {
+      currentState.accountSession = items.accountSession;
+      renderAccountState();
+    }
+
     applyLockState();
   };
 
@@ -638,11 +830,24 @@ window.addEventListener("DOMContentLoaded", () => {
     "settingsUnlockedUntil",
     "emergencyUnlockRequestedAt",
     "lastSealedBatch",
+    "accountSession",
   ];
 
   storage.get(keys).then((local) => {
     UI.init(local);
     document.body.classList.add("ready");
+
+    const session = local.accountSession;
+    if (session && session.refreshToken && session.expiresAt < Date.now() + 60_000) {
+      refreshSession(session.refreshToken).then((refreshed) => {
+        storage.set({ accountSession: refreshed });
+        if (refreshed) {
+          void syncAllWithCloud();
+        }
+      });
+    } else if (session && session.accessToken) {
+      void syncAllWithCloud();
+    }
   });
 
   chrome.storage.local.onChanged.addListener((changes) => {

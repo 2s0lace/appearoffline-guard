@@ -15,6 +15,7 @@ import {
 import { grantTemporaryUnlock } from "./helpers/temporary-unlock";
 import { getTranslations, Translations } from "./helpers/i18n";
 import { wakeGhost } from "./helpers/ghost-wake";
+import { pushHistoryEntriesToCloud } from "./helpers/supabase-sync";
 
 const COUNTDOWN_TOTAL_MS = 30_000;
 const MIN_REASON_LENGTH = 10;
@@ -341,12 +342,14 @@ window.addEventListener("DOMContentLoaded", () => {
       customCodeHashes = [],
       temporaryUnlocks = {},
       unlockHistory = [],
+      accountSession = null,
     } = await storage.get([
       "unlockMode",
       "usedCodeHashes",
       "customCodeHashes",
       "temporaryUnlocks",
       "unlockHistory",
+      "accountSession",
     ]);
 
     let nextUsedCodeHashes = usedCodeHashes;
@@ -392,6 +395,13 @@ window.addEventListener("DOMContentLoaded", () => {
       temporaryUnlocks: nextTemporaryUnlocks,
       unlockHistory: [logEntry, ...unlockHistory],
     });
+
+    if (accountSession) {
+      await Promise.race([
+        pushHistoryEntriesToCloud(accountSession, [logEntry]),
+        new Promise((resolve) => window.setTimeout(resolve, 1200)),
+      ]);
+    }
 
     window.location.replace(url);
   });

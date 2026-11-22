@@ -731,3 +731,96 @@ fieldset .option:not(:last-child) {
     flex-direction: column;
   }
 }
+
+/* Account (Supabase Auth) */
+.account-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.account-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.account-title-wrap h2 {
+  margin: 0 0 2px;
+  font-size: 1.05rem;
+}
+
+.account-title-wrap span {
+  font-size: 0.84rem;
+  color: var(--muted);
+}
+
+.account-connected {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.account-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--text);
+  font-size: 0.84rem;
+  font-weight: 500;
+}
+
+.account-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.account-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.account-inputs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.account-inputs input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.account-message {
+  font-size: 0.84rem;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--text);
+}
+
+.account-message.is-error {
+  background: color-mix(in srgb, var(--danger, #b83b35) 14%, transparent);
+  color: var(--danger, #b83b35);
+}
+
+@media (max-width: 600px) {
+  .account-inputs {
+    grid-template-columns: 1fr;
+  }
+}

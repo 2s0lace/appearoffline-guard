@@ -6,8 +6,10 @@ import {
   getSoonestUnlockExpiry,
   pruneExpiredUnlocks,
 } from "./helpers/temporary-unlock";
+import { syncAllWithCloud } from "./helpers/supabase-sync";
 
 const RECHECK_ALARM_NAME = "recheck-temporary-unlocks";
+const CLOUD_SYNC_ALARM_NAME = "periodic-cloud-sync";
 
 let __enabled = false;
 let __contextMenu = false;
@@ -58,6 +60,10 @@ const initReady = initStorage().then(() =>
 
     recreateContextMenu(__enabled && __contextMenu);
     scheduleNextRecheckAlarm(__temporaryUnlocks);
+    if (chrome.alarms) {
+      chrome.alarms.create(CLOUD_SYNC_ALARM_NAME, { periodInMinutes: 5 });
+    }
+    void syncAllWithCloud();
   }),
 );
 
@@ -86,6 +92,13 @@ chrome.storage.local.onChanged.addListener((changes) => {
 
 if (chrome.alarms) {
   chrome.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name === CLOUD_SYNC_ALARM_NAME) {
+      initReady.then(() => {
+        void syncAllWithCloud();
+      });
+      return;
+    }
+
     if (alarm.name !== RECHECK_ALARM_NAME) {
       return;
     }

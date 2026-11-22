@@ -53,6 +53,16 @@ export interface UnlockLogEntry {
   kind?: "SITE_UNLOCK" | "SETTINGS_UNLOCK"
 }
 
+export interface AccountSession {
+  accessToken: string
+  refreshToken: string
+  expiresAt: number
+  user: {
+    id: string
+    email: string
+  }
+}
+
 export interface Schema {
   enabled: boolean
   contextMenu: boolean
@@ -71,6 +81,7 @@ export interface Schema {
   settingsUnlockedUntil: number
   emergencyUnlockRequestedAt: number
   lastSealedBatch: string
+  accountSession: AccountSession | null
 }
 
 export const DEFAULTS: Readonly<Schema> = {
@@ -91,6 +102,7 @@ export const DEFAULTS: Readonly<Schema> = {
   settingsUnlockedUntil: 0,
   emergencyUnlockRequestedAt: 0,
   lastSealedBatch: "",
+  accountSession: null,
 };
 
 export const VALIDATORS: Readonly<Record<keyof Schema, (value: unknown) => boolean>> = {
@@ -111,6 +123,7 @@ export const VALIDATORS: Readonly<Record<keyof Schema, (value: unknown) => boole
   settingsUnlockedUntil: (value) => typeof value === "number" && !Number.isNaN(value),
   emergencyUnlockRequestedAt: (value) => typeof value === "number" && !Number.isNaN(value),
   lastSealedBatch: (value) => typeof value === "string",
+  accountSession: (value) => value === null || (typeof value === "object" && !Array.isArray(value)),
 };
 
 export const BLOCKED_EXAMPLE: string[] = [

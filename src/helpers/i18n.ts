@@ -95,6 +95,21 @@ export interface Translations {
   historyNavLink: string
   settingsNavLink: string
   historyLockedHint: string
+  accountTitle: string
+  accountDesc: string
+  accountConnectedAs: (email: string) => string
+  accountEmailPlaceholder: string
+  accountPasswordPlaceholder: string
+  accountSignInBtn: string
+  accountSignUpBtn: string
+  accountSignOutBtn: string
+  accountSigningIn: string
+  accountConfirmEmail: (email: string) => string
+  accountSignedInOk: string
+  accountFillFields: string
+  accountSyncNowBtn: string
+  accountSyncing: string
+  accountSyncedAt: (time: string, count: number) => string
 }
 
 const pl: Translations = {
@@ -211,6 +226,21 @@ const pl: Translations = {
   historyNavLink: "Historia",
   settingsNavLink: "Ustawienia",
   historyLockedHint: "Usuwanie wpisów i resetowanie liczników wymaga odblokowania ustawień kodem.",
+  accountTitle: "Konto",
+  accountDesc: "Podłącz konto Supabase (e-mail i hasło).",
+  accountConnectedAs: (email) => `Połączono: ${email}`,
+  accountEmailPlaceholder: "E-mail",
+  accountPasswordPlaceholder: "Hasło (min. 6 znaków)",
+  accountSignInBtn: "Zaloguj się",
+  accountSignUpBtn: "Załóż konto",
+  accountSignOutBtn: "Wyloguj się",
+  accountSigningIn: "Łączenie...",
+  accountConfirmEmail: (email) => `Konto utworzone — sprawdź skrzynkę ${email}, aby potwierdzić adres.`,
+  accountSignedInOk: "Zalogowano pomyślnie.",
+  accountFillFields: "Podaj adres e-mail i hasło (min. 6 znaków).",
+  accountSyncNowBtn: "Synchronizuj teraz",
+  accountSyncing: "Synchronizacja...",
+  accountSyncedAt: (time, count) => `Zsynchronizowano o ${time} (${count} wpisów w historii).`,
 };
 
 const en: Translations = {
@@ -327,6 +357,21 @@ const en: Translations = {
   historyNavLink: "History",
   settingsNavLink: "Settings",
   historyLockedHint: "Deleting entries and resetting counters requires unlocking settings with a code.",
+  accountTitle: "Account",
+  accountDesc: "Connect your Supabase account (email & password).",
+  accountConnectedAs: (email) => `Connected: ${email}`,
+  accountEmailPlaceholder: "Email",
+  accountPasswordPlaceholder: "Password (min. 6 chars)",
+  accountSignInBtn: "Sign in",
+  accountSignUpBtn: "Create account",
+  accountSignOutBtn: "Sign out",
+  accountSigningIn: "Connecting...",
+  accountConfirmEmail: (email) => `Account created — check ${email} to confirm your email.`,
+  accountSignedInOk: "Signed in successfully.",
+  accountFillFields: "Enter email and password (min. 6 chars).",
+  accountSyncNowBtn: "Sync now",
+  accountSyncing: "Syncing...",
+  accountSyncedAt: (time, count) => `Synced at ${time} (${count} history entries).`,
 };
 
 const es: Translations = {
@@ -443,6 +488,21 @@ const es: Translations = {
   historyNavLink: "Historial",
   settingsNavLink: "Ajustes",
   historyLockedHint: "Para borrar entradas o reiniciar contadores, desbloquea los ajustes con un código.",
+  accountTitle: "Cuenta",
+  accountDesc: "Conecta tu cuenta de Supabase (correo y contraseña).",
+  accountConnectedAs: (email) => `Conectado: ${email}`,
+  accountEmailPlaceholder: "Correo electrónico",
+  accountPasswordPlaceholder: "Contraseña (mín. 6 caracteres)",
+  accountSignInBtn: "Iniciar sesión",
+  accountSignUpBtn: "Crear cuenta",
+  accountSignOutBtn: "Cerrar sesión",
+  accountSigningIn: "Conectando...",
+  accountConfirmEmail: (email) => `Cuenta creada — revisa ${email} para confirmar tu correo.`,
+  accountSignedInOk: "Sesión iniciada correctamente.",
+  accountFillFields: "Introduce correo y contraseña (mín. 6 caracteres).",
+  accountSyncNowBtn: "Sincronizar ahora",
+  accountSyncing: "Sincronizando...",
+  accountSyncedAt: (time, count) => `Sincronizado a las ${time} (${count} entradas).`,
 };
 
 const fr: Translations = {
@@ -559,6 +619,21 @@ const fr: Translations = {
   historyNavLink: "Historique",
   settingsNavLink: "Paramètres",
   historyLockedHint: "Supprimer des entrées ou réinitialiser les compteurs nécessite de déverrouiller les paramètres avec un code.",
+  accountTitle: "Compte",
+  accountDesc: "Connecte ton compte Supabase (e-mail et mot de passe).",
+  accountConnectedAs: (email) => `Connecté : ${email}`,
+  accountEmailPlaceholder: "E-mail",
+  accountPasswordPlaceholder: "Mot de passe (min. 6 caractères)",
+  accountSignInBtn: "Se connecter",
+  accountSignUpBtn: "Créer un compte",
+  accountSignOutBtn: "Se déconnecter",
+  accountSigningIn: "Connexion...",
+  accountConfirmEmail: (email) => `Compte créé — vérifie ${email} pour confirmer ton adresse.`,
+  accountSignedInOk: "Connecté avec succès.",
+  accountFillFields: "Saisis un e-mail et un mot de passe (min. 6 caractères).",
+  accountSyncNowBtn: "Synchroniser",
+  accountSyncing: "Synchronisation...",
+  accountSyncedAt: (time, count) => `Synchronisé à ${time} (${count} entrées).`,
 };
 
 const de: Translations = {
@@ -675,6 +750,21 @@ const de: Translations = {
   historyNavLink: "Verlauf",
   settingsNavLink: "Einstellungen",
   historyLockedHint: "Zum Löschen von Einträgen oder Zurücksetzen der Zähler musst du die Einstellungen mit einem Code entsperren.",
+  accountTitle: "Konto",
+  accountDesc: "Verbinde dein Supabase-Konto (E-Mail & Passwort).",
+  accountConnectedAs: (email) => `Verbunden: ${email}`,
+  accountEmailPlaceholder: "E-Mail",
+  accountPasswordPlaceholder: "Passwort (mind. 6 Zeichen)",
+  accountSignInBtn: "Anmelden",
+  accountSignUpBtn: "Konto erstellen",
+  accountSignOutBtn: "Abmelden",
+  accountSigningIn: "Verbinde...",
+  accountConfirmEmail: (email) => `Konto erstellt — prüfe ${email}, um deine Adresse zu bestätigen.`,
+  accountSignedInOk: "Erfolgreich angemeldet.",
+  accountFillFields: "Gib E-Mail und Passwort ein (mind. 6 Zeichen).",
+  accountSyncNowBtn: "Jetzt synchronisieren",
+  accountSyncing: "Synchronisiere...",
+  accountSyncedAt: (time, count) => `Synchronisiert um ${time} (${count} Einträge).`,
 };
 
 const DICTIONARIES: Record<Language, Translations> = {
