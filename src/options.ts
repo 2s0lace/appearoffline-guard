@@ -33,8 +33,11 @@ const UI = (() => {
     theme: document.getElementById("theme") as HTMLSelectElement,
     codesOption: document.getElementById("codes-option") as HTMLDivElement,
     generateCodesBtn: document.getElementById("generate-codes-btn") as HTMLButtonElement,
+    generateFriendCodesBtn: document.getElementById("generate-friend-codes-btn") as HTMLButtonElement,
     generatedCodesBox: document.getElementById("generated-codes-box") as HTMLDivElement,
     generatedCodesOutput: document.getElementById("generated-codes-output") as HTMLTextAreaElement,
+    generatedTitle: document.getElementById("generated-title") as HTMLElement,
+    generatedDesc: document.getElementById("generated-desc") as HTMLSpanElement,
     copyCodesBtn: document.getElementById("copy-codes-btn") as HTMLButtonElement,
     hideCodesBtn: document.getElementById("hide-codes-btn") as HTMLButtonElement,
     contextMenu: document.getElementById("context-menu") as HTMLSelectElement,
@@ -82,6 +85,8 @@ const UI = (() => {
   };
 
   let t: Translations = getTranslations("pl");
+  let generatedBoxMode: "AI" | "FRIEND" = "AI";
+  let pendingFriendPayload = "";
 
   const booleanToString = (b: boolean) => b ? "YES" : "NO";
   const stringToBoolean = (s: string) => s === "YES";
@@ -154,6 +159,7 @@ const UI = (() => {
     elements.enabled.disabled = locked;
     elements.unlockMode.disabled = locked;
     elements.generateCodesBtn.disabled = locked;
+    elements.generateFriendCodesBtn.disabled = locked;
     elements.blockedList.disabled = locked;
     elements.resolution.disabled = locked;
     elements.showLastBatchBtn.hidden = !currentState.lastSealedBatch;
@@ -187,10 +193,11 @@ const UI = (() => {
     setText("label-codes-pool", t.codesPoolLabel);
     setText("codes-pool-desc", t.codesPoolDesc);
     setText("generate-codes-btn", t.generateCodesBtn);
-    setText("generated-title", t.generatedTitle);
-    setText("generated-desc", t.generatedDesc);
-    setText("copy-codes-btn", t.copyCodesBtn);
-    setText("hide-codes-btn", t.hideCodesBtn);
+    setText("generate-friend-codes-btn", t.generateFriendCodesBtn);
+    setText("generated-title", generatedBoxMode === "FRIEND" ? t.friendGeneratedTitle : t.generatedTitle);
+    setText("generated-desc", generatedBoxMode === "FRIEND" ? t.friendGeneratedDesc : t.generatedDesc);
+    setText("copy-codes-btn", generatedBoxMode === "FRIEND" ? t.copyFriendCodesBtn : t.copyCodesBtn);
+    setText("hide-codes-btn", generatedBoxMode === "FRIEND" ? t.clearFriendClipboardBtn : t.hideCodesBtn);
     setText("show-last-batch-btn", t.showLastBatchBtn);
     setText("emergency-title", t.emergencyTitle);
     setText("emergency-request-btn", t.emergencyRequestBtn);
@@ -255,11 +262,36 @@ const UI = (() => {
     storage.set({ theme });
   });
 
+  const showAiBatchBox = (sealedBlob: string) => {
+    generatedBoxMode = "AI";
+    pendingFriendPayload = "";
+    elements.generatedTitle.textContent = t.generatedTitle;
+    elements.generatedDesc.textContent = t.generatedDesc;
+    elements.copyCodesBtn.textContent = t.copyCodesBtn;
+    elements.hideCodesBtn.textContent = t.hideCodesBtn;
+    elements.generatedCodesOutput.hidden = false;
+    elements.generatedCodesOutput.value = sealedBlob;
+    elements.generatedCodesBox.hidden = false;
+  };
+
+  const showFriendBatchBox = (payload: string) => {
+    generatedBoxMode = "FRIEND";
+    pendingFriendPayload = payload;
+    elements.generatedTitle.textContent = t.friendGeneratedTitle;
+    elements.generatedDesc.textContent = t.friendGeneratedDesc;
+    elements.copyCodesBtn.textContent = t.copyFriendCodesBtn;
+    elements.hideCodesBtn.textContent = t.clearFriendClipboardBtn;
+    elements.generatedCodesOutput.value = "";
+    elements.generatedCodesOutput.hidden = true;
+    elements.generatedCodesBox.hidden = false;
+  };
+
   elements.generateCodesBtn.addEventListener("click", async () => {
     if (isSettingsLocked()) {
       return;
     }
     elements.generateCodesBtn.disabled = true;
+    elements.generateFriendCodesBtn.disabled = true;
     try {
       const { codes, hashes } = await generateCodeBatch(50);
       const sealedBlob = sealCodesForAi(codes);
@@ -269,22 +301,62 @@ const UI = (() => {
         // Sealed with the AI's public key, so keeping it lets the user re-copy it without revealing codes.
         lastSealedBatch: sealedBlob,
       });
-      elements.generatedCodesOutput.value = sealedBlob;
-      elements.generatedCodesBox.hidden = false;
+      showAiBatchBox(sealedBlob);
+    } finally {
+      applyLockState();
+    }
+  });
+
+  elements.generateFriendCodesBtn.addEventListener("click", async () => {
+    if (isSettingsLocked()) {
+      return;
+    }
+    elements.generateCodesBtn.disabled = true;
+    elements.generateFriendCodesBtn.disabled = true;
+    try {
+      const { codes, hashes } = await generateCodeBatch(50);
+      const formattedMessage = [
+        t.friendCodesMessageHeader,
+        "",
+        ...codes.map((code, idx) => `${idx + 1}. ${code}`),
+      ].join("\n");
+
+      await storage.set({
+        customCodeHashes: hashes,
+        usedCodeHashes: [],
+        lastSealedBatch: "",
+      });
+
+      try {
+        await navigator.clipboard.writeText(formattedMessage);
+      } catch {
+        // Clipboard permission might fail if window lost focus; user can click Copy again.
+      }
+
+      showFriendBatchBox(formattedMessage);
     } finally {
       applyLockState();
     }
   });
 
   elements.copyCodesBtn.addEventListener("click", async () => {
+    const textToCopy = generatedBoxMode === "FRIEND"
+      ? pendingFriendPayload
+      : elements.generatedCodesOutput.value;
+    const defaultLabel = generatedBoxMode === "FRIEND"
+      ? t.copyFriendCodesBtn
+      : t.copyCodesBtn;
+
     try {
-      await navigator.clipboard.writeText(elements.generatedCodesOutput.value);
+      await navigator.clipboard.writeText(textToCopy);
       elements.copyCodesBtn.textContent = t.copiedBtn;
       window.setTimeout(() => {
-        elements.copyCodesBtn.textContent = t.copyCodesBtn;
+        elements.copyCodesBtn.textContent = defaultLabel;
       }, 2000);
     } catch {
-      elements.generatedCodesOutput.select();
+      if (generatedBoxMode === "AI") {
+        elements.generatedCodesOutput.select();
+      }
     }
   });
 
@@ -292,8 +364,7 @@ const UI = (() => {
     if (!currentState.lastSealedBatch) {
       return;
     }
-    elements.generatedCodesOutput.value = currentState.lastSealedBatch;
-    elements.generatedCodesBox.hidden = false;
+    showAiBatchBox(currentState.lastSealedBatch);
   });
 
   elements.emergencyRequestBtn.addEventListener("click", () => {
@@ -346,7 +417,15 @@ const UI = (() => {
     elements.settingsUnlockForm.hidden = true;
   });
 
-  elements.hideCodesBtn.addEventListener("click", () => {
+  elements.hideCodesBtn.addEventListener("click", async () => {
+    if (generatedBoxMode === "FRIEND") {
+      pendingFriendPayload = "";
+      try {
+        await navigator.clipboard.writeText("");
+      } catch {
+        // Ignore clipboard clear errors.
+      }
+    }
     elements.generatedCodesOutput.value = "";
     elements.generatedCodesBox.hidden = true;
   });
