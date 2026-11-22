@@ -1,6 +1,6 @@
 {
   "name": "appearoffline-guard",
-  "version": "8.2.1",
+  "version": "1.0.0",
   "description": "Mindful website blocker that breaks rumination loops with a 30s pause, logged reason, history stats, and optional one-time AI/partner codes.",
   "author": "2s0lace (based on block-site by Pavel Bucka)",
   "license": "MIT",
