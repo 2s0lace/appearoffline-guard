@@ -1,62 +1,59 @@
 <p align="center">
-  <img src="assets/icon.svg" width="180" alt="A sleepy ghost wearing sage-green headphones">
+  <img src="assets/icon.svg" width="160" alt="appearoffline: guard icon">
 </p>
 
 <h1 align="center">appearoffline: guard</h1>
 
 <p align="center">
-  A gentle little browser extension for the moments your hand opens Twitter before your brain has a say.
+  A small Chrome/Firefox extension that adds a 30-second pause and a reason log before opening distracting sites.
 </p>
 
 ---
 
-## Why this exists
+I built this because hard site blockers never worked for me (I'd just disable them), and pure willpower didn't either. Usually I'm not even sure why I opened a tab. It's just habit, boredom, or rumination.
 
-You know the loop: you're anxious or bored, you open the same site for the fifth time in an hour, scroll, feel a bit worse, close it, repeat. Hard blockers don't really help — you just turn them off. Pure willpower doesn't either.
+Instead of slamming the tab shut, **appearoffline: guard** puts a quiet 30-second countdown in the way. While you wait, the little ghost sleeps with its headphones on. If you still want to go in, you pick why (*need*, *boredom*, *rumination*, or *other*) and write a short note that gets saved to your history.
 
-**appearoffline: guard** sits in the middle. It doesn't forbid anything. It just asks you to stop for a second, breathe, and say out loud (well, in writing) why you're here. Most of the time that's enough to notice you didn't actually want to go there.
+## Install (no build needed)
 
-Meet the ghost. It's sleeping with its headphones on while you wait — and when the pause is over, it opens its eyes and smiles at you. 👻
+Grab the latest zip from [Releases](https://github.com/2s0lace/appearoffline-guard/releases/latest):
 
-## What it does
+**Chrome / Brave / Edge / Arc**
+1. Download `appearoffline-guard-chrome.zip` and unzip it somewhere permanent.
+2. Open `chrome://extensions` and enable **Developer mode**.
+3. Click **Load unpacked** and select the unzipped folder.
+4. Pin the icon to your toolbar and click it to add sites.
 
-- **A 30-second breather.** When you hit a blocked site you get a calm breathing ring instead of the page. If you switch tabs, the countdown waits for you.
-- **"Why are you here?"** Before going in, you pick what's pulling you — *need*, *boredom*, *rumination* or *other* — and write a sentence about it.
-- **A history you can actually learn from.** A separate history page shows how often you went in out of boredom versus real need, today, this week, this month or all time.
-- **Strict mode with one-time codes (optional).** For the days you don't trust yourself: every unlock needs a code, and the codes live with your AI assistant or a friend, not with you.
-  - Generate a batch of 50 codes and paste the block into any AI chat. You can't read the codes; the AI can, and hands them out one at a time after asking why.
-  - A valid code lets you in right away — no 30-second wait, but you still log the reason.
-  - Lost your codes? Ask for an **emergency unlock**. It works without a code, just not right now: 24 hours after you request it.
-- **Short, timed unlocks.** Choose 5, 10, 15 or 30 minutes; when time is up, open tabs get blocked again.
-- **Light and dark themes, five languages** (Polish, English, Spanish, French, German).
+**Firefox**
+1. Download `appearoffline-guard-firefox.zip`.
+2. Open `about:debugging#/runtime/this-firefox`.
+3. Click **Load Temporary Add-on…** and pick the zip (or `manifest.json` after unzipping).
 
-## Try it locally
+## What's inside
+
+- **30s pause**: smooth breathing ring that pauses if you switch tabs.
+- **Reason log & history**: pick a category (*need*, *boredom*, *rumination*, *other*), write why you're visiting, and review your patterns over today, this week, this month, or all time.
+- **Timed unlocks**: unlock a site for 5, 10, 15, or 30 minutes. Once time's up, open tabs get blocked again automatically.
+- **Optional strict mode (one-time codes)**: if you want extra friction, turn on code mode. You can generate a batch of 50 single-use codes and hand them to a friend or an AI chat so you have to ask before unlocking. Includes a 24-hour emergency unlock in case you lose your codes.
+- **Light & dark themes** + 5 languages (Polish, English, Spanish, French, German).
+
+## Build from source
 
 ```bash
 npm install
-npm run build
+npm run lint
+npm test
 ```
 
-That builds both versions into `dist/chrome` and `dist/firefox`.
+Build bundles (PowerShell):
 
-**Chrome, Edge, Brave, Arc**
-1. Open `chrome://extensions`.
-2. Turn on **Developer mode**.
-3. Click **Load unpacked** and pick the `dist/chrome` folder.
-4. Pin the ghost to your toolbar — clicking it opens the settings.
+```powershell
+$env:TARGET="chrome"; npx tsup
+$env:TARGET="firefox"; npx tsup
+```
 
-**Firefox**
-1. Open `about:debugging#/runtime/this-firefox`.
-2. Click **Load Temporary Add-on…** and pick `dist/firefox/manifest.json`.
+Output goes to `dist/chrome` and `dist/firefox`.
 
-After changing code, run `npm run build` again and hit the reload button on the extension.
+## Credits & License
 
-For development: `npm run lint` and `npm test`.
-
-## Credits
-
-Built on top of [penge/block-site](https://github.com/penge/block-site) by Pavel Bucka (MIT). The ghost was drawn for this project and lives in [`assets/`](assets/).
-
-## License
-
-MIT
+Forked from [penge/block-site](https://github.com/penge/block-site) by Pavel Bucka. Licensed under MIT.
